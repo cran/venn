@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Adrian Dusa
+# Copyright (c) 2019, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@ function(area, snames, ellipse = FALSE) {
             }
             x <- gsub("[[:space:]]", "", x)
             if (!all(gsub("0|1|-|\\+", "", x) == "")) {
-                x <- translate2(x, snames)
+                x <- admisc::translate(x, snames = snames)
                 snames <- colnames(x)
                 x <- paste(apply(x, 1, function(y) {
                     y[y < 0] <- "-"

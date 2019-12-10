@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Adrian Dusa
+# Copyright (c) 2019, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -37,7 +37,7 @@
             paste(x, collapse = "")
         }))
     }
-    y <- translate2(x, snames)
+    y <- admisc::translate(x, snames = snames)
     snames <- colnames(y)
     if (grepl("\\(|\\)", x)) {
         opened <- gsub("[A-Za-z]|\\+|\\*|\\)", "", x)
@@ -77,16 +77,16 @@
                 cat("\n")
                 stop(simpleError("Invalid expression.\n\n"))
             }
-            result <- list(transformx(translate2(paste(x[seq(1, opened[1] - 1)], collapse = ""), snames)))
+            result <- list(transformx(admisc::translate(paste(x[seq(1, opened[1] - 1)], collapse = ""), snames = snames)))
             for (i in seq(length(opened))) {
-                result[[i + 1]] <- transformx(translate2(paste(x[seq(opened[i] + 1, closed[i] - 1)], collapse = ""), snames))
+                result[[i + 1]] <- transformx(admisc::translate(paste(x[seq(opened[i] + 1, closed[i] - 1)], collapse = ""), snames = snames))
             }
             if (closed[length(closed)] != length(x)) {
                 if (x[closed[length(closed)] + 1] != "+") {
                     cat("\n")
                     stop(simpleError("Brackets are allowed only for disjunctions.\n\n"))
                 }
-                result[[length(result) + 1]] <- transformx(translate2(paste(x[seq(closed[length(closed)] + 2, length(x))], collapse = ""), snames))
+                result[[length(result) + 1]] <- transformx(admisc::translate(paste(x[seq(closed[length(closed)] + 2, length(x))], collapse = ""), snames = snames))
             }
             return(result)
         }

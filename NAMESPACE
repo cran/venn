@@ -5,6 +5,7 @@ export(.onAttach,
        openPlot,
        plotRules,
        venn)
+import(admisc)
 importFrom("grDevices", "adjustcolor", "dev.cur", "dev.new")
 importFrom("graphics", "lines", "par", "plot", "polygon",
            "polypath", "text", "points")

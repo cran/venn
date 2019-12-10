@@ -1,4 +1,4 @@
-# Copyright (c) 2018, Adrian Dusa
+# Copyright (c) 2019, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -25,16 +25,27 @@
 
 `venn` <-
 function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
-     zcolor = "bw", opacity = 0.3, size = 15, cexil = 0.6, cexsn = 0.85,
-     borders = TRUE, ...) {
+     zcolor = "bw", opacity = 0.3, size = 15, ilcs = 0.6, sncs = 0.85,
+     borders = TRUE, box = TRUE, par = TRUE, ggplot = FALSE, ...) {
     if (missing(x)) {
         cat("\n")
         stop(simpleError("Argument \"x\" is missing.\n\n"))
     }
-    splitstr <- function(x, split = ",") {
-        gsub("\\n", "", unlist(strsplit(gsub("[[:space:]]", "", x), split = split)))
+    if (ggplot) {
+        ilcs <- 2.5
+        sncs <- 3.5
+        if (!requireNamespace("ggplot2", quietly = TRUE) | !requireNamespace("ggpolypath", quietly = TRUE)) {
+            cat("\n")
+            stop("Packages \"ggplot2\" and \"ggpolypath\" are needed to make this work, please install.", call. = FALSE)
+        }
     }
     funargs <- unlist(lapply(match.call(), deparse)[-1])
+    if (!is.element("cexil", names(funargs))) {
+        names(funargs)[which(names(funargs) == "cexil")] <- "ilcs"
+    }
+    if (!is.element("cexsn", names(funargs))) {
+        names(funargs)[which(names(funargs) == "cexsn")] <- "sncs"
+    }
     if (inherits(tryCatch(eval(x), error = function(e) e), "error")) {
         x <- funargs["x"]
     }
@@ -54,7 +65,11 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
     }
     nofsets <- 0
     if (!identical(snames, "")) {
-        snames <- splitstr(snames)
+        if (!is.character(snames)) {
+            cat("\n")
+            stop(simpleError("The \"snames\" argument should be character.\n\n"))
+        }
+        if (length(snames) == 1) snames <- admisc::splitstr(snames)
         nofsets <- length(snames)
     }
     ttqca <- FALSE
@@ -119,8 +134,8 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
             }
         }
         individual <- length(opacity) == nrow(tt)
-        ints <- read.csv(file.path(system.file("data", package="venn"), "ints.csv.gz"))
-        openPlot(size)
+        ints <- read.csv(file.path(system.file("data", package = "venn"), "ints.csv.gz"))
+        gvenn <- openPlot(size, par = par, ggplot = ggplot)
         if (individual) {
             for (i in seq(nrow(tt))) {
                 if (tt$OUT[i] != "?") {
@@ -172,15 +187,15 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
             snames <- obj$tt$options$conditions
             nofsets <- length(snames)
         }
-        x <- splitstr(x)
+        x <- unlist(strsplit(gsub("[[:space:]]", "", x), split = ","))
         if (all(grepl("[A-Za-z]", x))) { 
             if (identical(snames, "")) {
-                y <- translate2(paste(x, collapse = "+"), snames)
+                y <- admisc::translate(paste(x, collapse = "+"), snames = snames)
                 snames <- colnames(x)
                 nofsets <- length(snames)
             }
             x <- lapply(x, function(x) {
-                return(paste(apply(translate2(x, snames), 1, function(x) {
+                return(paste(apply(admisc::translate(x, snames = snames), 1, function(x) {
                     x[x < 0] <- "-"
                     paste(x, collapse="")
                 }), collapse = "+"))
@@ -192,7 +207,7 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
                 stop(simpleError("Invalid codes in the rule(s).\n\n"))
             }
             if (nofsets == 0) {
-                nofsets <- unique(nchar(splitstr(x, split = "\\+")))
+                nofsets <- unique(nchar(unlist(strsplit(x, split = "\\+"))))
             }
             x <- as.list(x)
         }
@@ -226,7 +241,7 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
             obj <- get(unlist(strsplit(funargs["x"], split = "[$]"))[1])
             snames <- obj$tt$options$conditions
             nofsets <- length(snames)
-            x <- translate2(paste(unlist(x), collapse = " + "), snames)
+            x <- admisc::translate(paste(unlist(x), collapse = " + "), snames = snames)
             x <- as.list(apply(x, 1, function(y) {
                 y[y < 0] <- "-"
                 paste(y, collapse = "")
@@ -282,13 +297,16 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
             stop(simpleError("Length of set names does not match the number of sets.\n\n"))
         }
     }
-    if (!is.element("cexil", names(funargs))) {
-        cexil <- cexil - ifelse(nofsets > 5, 0.1, 0) - ifelse(nofsets > 6, 0.05, 0)
+    if (!is.element("ilcs", names(funargs))) {
+        if (!ggplot) {
+            ilcs <- ilcs - ifelse(nofsets > 5, 0.1, 0) - ifelse(nofsets > 6, 0.05, 0)
+        }
     }
     if (!ttqca) {
-        openPlot(size)
+        gvenn <- openPlot(size, par = par, ggplot = ggplot)
     }
-    plotRules(x, zcolor, ellipse, opacity, allborders = borders, ... = ...)
+    gvenn <- plotRules(x, zcolor, ellipse, opacity, allborders = borders, 
+                        box = box, gvenn = gvenn, ... = ...)
     scoords <- data.frame(
         s = c(1, rep(2, 2), rep(3, 3), rep(4, 4), rep(5, 10), rep(6, 6), rep(7, 7), rep(4, 4)),
         v = c(rep(0, 1 + 2 + 3), rep(1, 4), rep(0:1, each = 5), rep(0, 6 + 7), rep(0, 4)), 
@@ -302,12 +320,31 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
             cts[cts == 0] <- ""
             ilabels <- cts
         }
-        text(icoords[icoords$s == nofsets & icoords$v == as.numeric(ellipse), c("x", "y")], labels = ilabels, cex = cexil)
+        icoords <- icoords[icoords$s == nofsets & icoords$v == as.numeric(ellipse), c("x", "y")]
+        if (ggplot) {
+            for (i in seq(length(ilabels))) {
+                gvenn <- gvenn + ggplot2::annotate("text", label = ilabels[i], x = icoords$x[i], y = icoords$y[i], size = ilcs)
+            }
+        }
+        else {
+            text(icoords, labels = ilabels, cex = ilcs)
+        }
     }
-    text(scoords[scoords$s == nofsets & scoords$v == as.numeric(ellipse), c("x", "y")], labels = snames, cex = cexsn)
+    scoords <- scoords[scoords$s == nofsets & scoords$v == as.numeric(ellipse), c("x", "y")]
+    if (ggplot) {
+        for (i in seq(length(snames))) {
+            gvenn <- gvenn + ggplot2::annotate("text", label = snames[i], x = scoords$x[i], y = scoords$y[i], size = sncs)
+        }
+    }
+    else {
+        text(scoords, labels = snames, cex = sncs)
+    }
     if (ttqca) {
         points(seq(10, 340, length.out = 4), rep(-25, 4), pch = 22, bg = ttcolors, cex = 1.75)
         text(seq(40, 370, length.out = 4), rep(-26, 4), names(ttcolors), cex = 0.85)
+    }
+    if (ggplot) {
+        return(gvenn)
     }
     if (listx) {
         return(invisible(tt))
