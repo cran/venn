@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Adrian Dusa
+# Copyright (c) 2020, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -26,7 +26,6 @@
 `plotRules` <-
 function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
          allborders = TRUE, box = TRUE, gvenn = NULL, ...) {
-    sets <- read.csv(system.file("data", "sets.csv.gz", package = "venn"))
     zeroset <- matrix(c(0, 1000, 1000, 0, 0, 0, 0, 1000, 1000, 0), ncol = 2)
     colnames(zeroset) <- c("x", "y")
     default <- identical(zcolor, "style")
@@ -78,10 +77,10 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
                 zones[[i]] <- getZones(rowns[[i]], nofsets, ellipse)
                 polygons <- rbind(zeroset, rep(NA, 2), zones[[i]][[1]])
                 polygons <- polygons[-nrow(polygons), ] 
-                if (!is.null(gvenn)) {
-                    gvenn <- gvenn + ggpolypath::geom_polypath(polygons, rule = "evenodd", col = adjustcolor(zcolor[i], alpha.f = opacity))
-                } else {
+                if (is.null(gvenn)) {
                     polypath(polygons, rule = "evenodd", col = adjustcolor(zcolor[i], alpha.f = opacity), border = NA)
+                } else {
+                    gvenn <- gvenn + ggpolypath::geom_polypath(polygons, rule = "evenodd", col = adjustcolor(zcolor[i], alpha.f = opacity))
                 }
             }
         }
@@ -99,10 +98,10 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
             for (i in seq(length(zones))) {
                 if (!irregular[i]) {
                     for (j in seq(length(zones[[i]]))) {
-                        if (!is.null(gvenn)) {
-                            gvenn <- gvenn + ggplot2::geom_polygon(data = zones[[i]][[j]], ggplot2::aes(x, y), fill = adjustcolor(zcolor[i], alpha.f = opacity))
-                        } else {
+                        if (is.null(gvenn)) {
                             polygon(zones[[i]][[j]], col = adjustcolor(zcolor[i], alpha.f = opacity), border = NA)
+                        } else {
+                            gvenn <- gvenn + ggplot2::geom_polygon(data = zones[[i]][[j]], ggplot2::aes(x, y), fill = adjustcolor(zcolor[i], alpha.f = opacity))
                         }
                     }
                 }
@@ -129,11 +128,11 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
     }
     other.args <- list(...)
     if (box) {
-        if (!is.null(gvenn)) {
-            gvenn <- gvenn + ggplot2::geom_path(data = as.data.frame(zeroset), ggplot2::aes(x, y))
+        if (is.null(gvenn)) {
+            lines(zeroset)
         }
         else {
-            lines(zeroset)
+            gvenn <- gvenn + ggplot2::geom_path(data = as.data.frame(zeroset), ggplot2::aes(x, y))
         }
     }
     if (!identical(zcolor, "bw")) {
@@ -143,46 +142,42 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
         bcolor <- "#000000"
     }
     if (allsets & allwhole) {
+        temp <- sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")]
         if (is.numeric(rules) & !identical(zcolor, "bw")) {
-            if (!is.null(gvenn)) {
-                gvenn <- gvenn + ggplot2::geom_polygon(data = sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")],
-                    ggplot2::aes(x, y), fill = adjustcolor(zcolor, alpha.f = opacity))
+            if (is.null(gvenn)) {
+                polygon(temp,
+                        col = adjustcolor(zcolor, alpha.f = opacity), border = NA)
             }
             else {
-                polygon(sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")],
-                        col = adjustcolor(zcolor, alpha.f = opacity), border = NA)
+                gvenn <- gvenn + ggplot2::geom_polygon(data = temp,
+                    ggplot2::aes(x, y), fill = adjustcolor(zcolor, alpha.f = opacity))
             }
         }
         if (default) {
             for (i in seq(nofsets)) {
-                if (!is.null(gvenn)) {
-                    temp <- sets[sets$s == nofsets & sets$v == as.numeric(ellipse) & sets$n == i, c("x", "y")]
+                temp <- sets[sets$s == nofsets & sets$v == as.numeric(ellipse) & sets$n == i, c("x", "y")]
+                if (is.null(gvenn)) {
+                    suppressWarnings( lines(temp, col = bcolor[i]))
+                }
+                else {
                     breaks <- which(apply(temp, 1, function(x) any(is.na(x))))
                     start <- 1
                     for (b in seq(length(breaks))) {
                         if (b > 1) start <- breaks[b - 1] + 1
                         gvenn <- gvenn + ggplot2::geom_path(ggplot2::aes(x, y), data = temp[seq(start, breaks[b] - 1), ], col = bcolor[i])
                     }
-                } else {
-                    suppressWarnings(
-                        lines(sets[sets$s == nofsets & sets$v == as.numeric(ellipse) & sets$n == i, c("x", "y")], col = bcolor[i])
-                    )
                 }
             }
         }
         else {
             if (length(other.args) > 0) {
-                if (any(sapply(other.args, length) > 1)) {
-                    other.args <- lapply(other.args, function(x) {
-                        if (length(x) != nofsets) {
-                            return(rep(x, length.out = nofsets))
-                        }
-                        else {
-                            return(x)
-                        }
-                    })
-                    for (i in seq(nofsets)) {
-                        seplines <- list(as.name("lines"), x = sets[sets$s == nofsets & sets$v == as.numeric(ellipse) & sets$n == i, c("x", "y")])
+                other.args <- lapply(other.args, function(x) {
+                    rep(x, length.out = nofsets)
+                })
+                for (i in seq(nofsets)) {
+                    plotdata <- sets[sets$s == nofsets & sets$v == as.numeric(ellipse) & sets$n == i, c("x", "y")]
+                    if (is.null(gvenn)) {
+                        seplines <- list(as.name("lines"), x = plotdata)
                         suppress <- list(as.name("suppressWarnings"))
                         for (j in names(other.args)) {
                             seplines[[j]] <- other.args[[j]][i]
@@ -190,38 +185,49 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
                         suppress[[2]] <- as.call(seplines)
                         eval(as.call(suppress))
                     }
-                }
-                else {
-                    suppressWarnings(lines(sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")], ... = ...))
+                    else {
+                        seplines <- list(ggplot2::geom_path)
+                        if (all(is.na(tail(plotdata, 1)))) {
+                            plotdata <- plotdata[-nrow(plotdata), , drop = FALSE]
+                        }
+                        seplines$mapping <- ggplot2::aes(x, y)
+                        seplines$data <- plotdata
+                        for (j in names(other.args)) {
+                            seplines[[j]] <- other.args[[j]][i]
+                        }
+                        gvenn <- gvenn + eval(as.call(seplines))
+                    }
                 }
             }
             else {
-                if (!is.null(gvenn)) {
-                    temp <- sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")]
+                temp <- sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")]
+                if (is.null(gvenn)) {
+                    suppressWarnings(lines(temp))
+                }
+                else {
                     breaks <- which(apply(temp, 1, function(x) any(is.na(x))))
                     start <- 1
                     for (b in seq(length(breaks))) {
                         if (b > 1) start <- breaks[b - 1] + 1
                         gvenn <- gvenn + ggplot2::geom_path(ggplot2::aes(x, y), data = temp[seq(start, breaks[b] - 1), ])
                     }
-                } else {
-                    suppressWarnings(lines(sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")]))
                 }
             }
         }
     }
     else {
         if (allborders) {
-            if (!is.null(gvenn)) {
-                temp <- sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")]
+            temp <- sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")]
+            if (is.null(gvenn)) {
+                suppressWarnings(lines(temp))
+            }
+            else {
                 breaks <- which(apply(temp, 1, function(x) any(is.na(x))))
                 start <- 1
                 for (b in seq(length(breaks))) {
                     if (b > 1) start <- breaks[b - 1] + 1
                     gvenn <- gvenn + ggplot2::geom_path(ggplot2::aes(x, y), data = temp[seq(start, breaks[b] - 1), ])
                 }
-            } else {
-                suppressWarnings(lines(sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")]))
             }
         }
         else {
@@ -232,7 +238,10 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
         if (default) {
             for (i in seq(length(zones))) {
                 for (j in seq(length(zones[[i]]))) {
-                    if (!is.null(gvenn)) {
+                    if (is.null(gvenn)) {
+                        suppressWarnings(lines(zones[[i]][[j]], col = bcolor[i]))
+                    }
+                    else {
                         temp <- zones[[i]][[j]]
                         breaks <- which(apply(temp, 1, function(x) any(is.na(x))))
                         start <- 1
@@ -240,8 +249,6 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
                             if (b > 1) start <- breaks[b - 1] + 1
                             gvenn <- gvenn + ggplot2::geom_path(ggplot2::aes(x, y), data = temp[seq(start, breaks[b] - 1), ], col = bcolor[i])
                         }
-                    } else {
-                        suppressWarnings(lines(zones[[i]][[j]], col = bcolor[i]))
                     }
                 }
             }
@@ -249,32 +256,11 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
         else {
             if (length(other.args) > 0) {
                 other.args <- lapply(other.args, function(x) {
-                    if (length(x) != length(rules)) {
-                        return(rep(x, length.out = length(rules)))
-                    } else {
-                        return(x)
-                    }
+                    rep(x, length.out = length(rules))
                 })
                 for (i in seq(length(zones))) {
                     for (j in seq(length(zones[[i]]))) {
-                        if (!is.null(gvenn)) {
-                            temp <- zones[[i]][[j]]
-                            breaks <- which(apply(temp, 1, function(x) any(is.na(x))))
-                            start <- 1
-                            for (b in seq(length(breaks))) {
-                                seplines <- list(as.name("geom_path"))
-                                if (b > 1) start <- breaks[b - 1] + 1
-                                seplines[["data"]] <- temp[seq(start, breaks[b] - 1), ]
-                                seplines[["mapping"]] <- ggplot2::aes(x, y)
-                                if (any(names(other.args) == "col")) {
-                                    other.args$col <- admisc::splitstr(other.args$col)
-                                }
-                                for (j in names(other.args)) {
-                                    seplines[[j]] <- other.args[[j]][i]
-                                }
-                                gvenn <- gvenn + eval(as.call(seplines))
-                            }
-                        } else {
+                        if (is.null(gvenn)) {
                             seplines <- list(as.name("lines"), x = zones[[i]][[j]])
                             suppress <- list(as.name("suppressWarnings"))
                             if (any(names(other.args) == "col")) {
@@ -285,6 +271,24 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
                             }
                             suppress[[2]] <- as.call(seplines)
                             eval(as.call(suppress))
+                        }
+                        else {
+                            temp <- zones[[i]][[j]]
+                            breaks <- which(apply(temp, 1, function(x) any(is.na(x))))
+                            start <- 1
+                            for (b in seq(length(breaks))) {
+                                if (b > 1) start <- breaks[b - 1] + 1
+                                seplines <- list(ggplot2::geom_path)
+                                seplines[["data"]] <- temp[seq(start, breaks[b] - 1), ]
+                                seplines[["mapping"]] <- ggplot2::aes(x, y)
+                                if (any(names(other.args) == "col")) {
+                                    other.args$col <- admisc::splitstr(other.args$col)
+                                }
+                                for (j in names(other.args)) {
+                                    seplines[[j]] <- other.args[[j]][i]
+                                }
+                                gvenn <- gvenn + eval(as.call(seplines))
+                            }
                         }
                     }
                 }

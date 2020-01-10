@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Adrian Dusa
+# Copyright (c) 2020, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -24,15 +24,13 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 `openPlot` <-
-function(size = 15, par = TRUE, ggplot = FALSE) {
-    if (par) {
-        if (dev.cur() == 1) {
-            dev.new(width = (size + 1)/2.54, height = (size + 1)/2.54)
-        }
-        par(new = FALSE, xpd = TRUE, mai = c(0.05, 0.05, 0.05, 0.05))
-    }
+function(plotsize = 15, par = TRUE, ggplot = FALSE) {
     if (ggplot) {
+        cf <- ggplot2::coord_fixed()
+        cf$default <- TRUE
         return(ggplot2::ggplot() + ggplot2::geom_blank() + 
+            cf +
+            ggplot2::coord_fixed(xlim = c(0, 1000), ylim = c(0, 1000)) + 
             ggplot2::theme(axis.line = ggplot2::element_blank(),
                 axis.text.x = ggplot2::element_blank(),
                 axis.text.y = ggplot2::element_blank(),
@@ -51,7 +49,14 @@ function(size = 15, par = TRUE, ggplot = FALSE) {
                 plot.subtitle = ggplot2::element_text(size = 0),
                 plot.tag = ggplot2::element_text(size = 0),
                 plot.caption = ggplot2::element_text(size = 0)))
-    } else {
+    }
+    else {
+        if (par) {
+            if (dev.cur() == 1) {
+                dev.new(width = (plotsize + 1)/2.54, height = (plotsize + 1)/2.54)
+            }
+            par(new = FALSE, xpd = TRUE, mai = c(0.05, 0.05, 0.05, 0.05))
+        }
         plot(0:1000, type = "n", axes = FALSE, asp = 1, xlab = "", ylab = "")
     }
 }

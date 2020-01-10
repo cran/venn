@@ -1,4 +1,4 @@
-# Copyright (c) 2019, Adrian Dusa
+# Copyright (c) 2020, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -26,8 +26,6 @@
 `getZones` <-
 function(area, snames, ellipse = FALSE) {
     funargs <- unlist(lapply(match.call(), deparse)[-1])
-    borders <- read.csv(file.path(system.file("data", package="venn"), "borders.csv.gz"))
-    ib <- read.csv(file.path(system.file("data", package="venn"), "ib.csv.gz"))
     if (is.character(area)) {
         x <- gsub("[[:space:]]", "", area)
         if (!all(gsub("0|1|-", "", x) == "")) {
