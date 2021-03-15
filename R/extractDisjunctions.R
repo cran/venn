@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Adrian Dusa
+# Copyright (c) 2021, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -40,8 +40,8 @@
     y <- admisc::translate(x, snames = snames)
     snames <- colnames(y)
     if (grepl("\\(|\\)", x)) {
-        opened <- gsub("[A-Za-z]|\\+|\\*|\\)", "", x)
-        closed <- gsub("[A-Za-z]|\\+|\\*|\\(", "", x)
+        opened <- gsub("[A-Za-z]|\\+|\\*|\\(", "", x)
+        closed <- gsub("[A-Za-z]|\\+|\\*|\\)", "", x)
         if (nchar(opened) != nchar(closed)) {
             cat("\n")
             stop(simpleError("All opened / closed brackets should match.\n\n"))

@@ -1,4 +1,4 @@
-# Copyright (c) 2020, Adrian Dusa
+# Copyright (c) 2021, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -145,13 +145,16 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
         temp <- sets[sets$s == nofsets & sets$v == as.numeric(ellipse), c("x", "y")]
         if (is.numeric(rules) & !identical(zcolor, "bw")) {
             if (is.null(gvenn)) {
-                polygon(temp,
-                        col = adjustcolor(zcolor, alpha.f = opacity), border = NA)
+                polygon(temp, col = adjustcolor(zcolor, alpha.f = opacity), border = NA)
             }
             else {
-                gvenn <- gvenn + ggplot2::geom_polygon(data = temp,
-                    ggplot2::aes(x, y), fill = adjustcolor(zcolor, alpha.f = opacity))
-            }
+                breaks <- which(apply(temp, 1, function(x) any(is.na(x))))
+                start <- 1
+                for (b in seq(length(breaks))) {
+                    if (b > 1) start <- breaks[b - 1] + 1
+                    gvenn <- gvenn + ggplot2::geom_polygon(data = temp[seq(start, breaks[b] - 1), ], ggplot2::aes(x, y), fill = adjustcolor(zcolor[b], alpha.f = opacity))
+                }
+            }    
         }
         if (default) {
             for (i in seq(nofsets)) {
