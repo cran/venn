@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Adrian Dusa
+# Copyright (c) 2022, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -107,7 +107,7 @@ function(area, snames, ellipse = FALSE) {
         result = list(area)
     }
     result <- lapply(result, function(x) {
-        b <- ib$b[ib$s == nofsets & ib$v == as.numeric(ellipse) & ib$i %in% x]
+        b <- ib$b[ib$s == nofsets & ib$v == as.numeric(ellipse) & is.element(ib$i, x)]
         if (any(duplicated(b))) {
             b <- setdiff(b, b[duplicated(b)])
         }

@@ -1,4 +1,4 @@
-# Copyright (c) 2021, Adrian Dusa
+# Copyright (c) 2022, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
         }
         nofsets <- unique(unlist(lapply(rules, function(x) {
             nchar(unlist(strsplit(x, split = "\\+")))
-        })))    
+        })))
         tt <- sapply(rev(seq(nofsets)), function(x) {
             rep(c(sapply(0:1, function(y) rep(y, 2^(x - 1)))), 2^nofsets/2^x)
         })
@@ -154,7 +154,7 @@ function(rules, zcolor = "bw", ellipse = FALSE, opacity = 0.3,
                     if (b > 1) start <- breaks[b - 1] + 1
                     gvenn <- gvenn + ggplot2::geom_polygon(data = temp[seq(start, breaks[b] - 1), ], ggplot2::aes(x, y), fill = adjustcolor(zcolor[b], alpha.f = opacity))
                 }
-            }    
+            }
         }
         if (default) {
             for (i in seq(nofsets)) {
