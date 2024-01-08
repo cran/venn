@@ -29,16 +29,52 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-`checkZone` <- function(from, zones, checkz, nofsets, ib, ellipse) {
-    fromz <- ib[ib$s == nofsets & ib$v == as.numeric(ellipse) & ib$i == from, ]
-    toz <- ib[ib$s == nofsets & ib$v == as.numeric(ellipse) & ib$i %in% zones[!checkz], ]
-    toz <- toz[toz$b %in% fromz$b, , drop = FALSE]
-    if (nrow(toz) > 0) {
-        zs <- sort(unique(toz$i))
-        checkz[as.character(zs)] <- TRUE
-        for (i in zs) {
-            checkz <- checkz | Recall(i, zones, checkz, nofsets, ib, ellipse)
-        }
+`extractInfo` <- function(
+    x, what = c("counts", "intersections", "both"), use.names = FALSE
+) {
+    what <- match.arg(what)
+    if (!is.list(x)) {
+        admisc::stopError("Argument x should be a list")
     }
-    return(checkz)
+    if (length(x) > 7) {
+        x <- x[seq(7)]
+    }
+    nofsets <- length(x)
+    if (any(names(x) == "")) {
+        names(x) <- LETTERS[seq(nofsets)]
+    }
+    snames <- names(x)
+    tt <- sapply(
+        rev(seq(nofsets)),
+        function(x) {
+            rep.int(
+                c(sapply(0:1, function(y) rep.int(y, 2^(x - 1)))),
+                2^nofsets / 2^x
+            )
+        }
+    )
+    colnames(tt) <- snames
+    intersections <- apply(tt, 1,
+        function(y) {
+            setdiff(Reduce(intersect, x[y == 1]), unlist(x[y == 0]))
+        }
+    )
+    if (!isTRUE(use.names)) {
+        snames <- seq(length(snames))
+    }
+    names(intersections) <- apply(
+        tt,
+        1,
+        function(x) paste(snames[x == 1], collapse = ":")
+    )
+    ttcts <- unlist(lapply(intersections, length))
+    intersections <- intersections[ttcts > 0]
+    tt <- as.data.frame(cbind(tt, counts = ttcts))
+    if (what == "counts") {
+        return(tt)
+    }
+    if (what == "intersections") {
+        return(intersections)
+    }
+    return(list(tt, intersections))
 }

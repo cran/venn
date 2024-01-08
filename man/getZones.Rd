@@ -14,13 +14,13 @@ getZones(area, snames, ellipse = FALSE)
 }
 
 \arguments{
-  \item{area}{A chgaracter expression written in sum of products form.}
+  \item{area}{A character expression written in sum of products form.}
   \item{snames}{A string containing the sets' names, separated by commas.}
   \item{ellipse}{Logical, get the zones from the shape of an ellipse, where possible}
 }
 
 \details{
-         
+
 A SOP ("sum of products") is also known as a DNF ("disjunctive normal form"), or in other
 words a "union of intersections", for example \bold{\code{A*D + B*c}}.
 

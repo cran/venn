@@ -1,21 +1,27 @@
-# Copyright (c) 2022, Adrian Dusa
+# Copyright (c) 2016 - 2024, Adrian Dusa
 # All rights reserved.
 # 
 # Redistribution and use in source and binary forms, with or without
 # modification, in whole or in part, are permitted provided that the
 # following conditions are met:
+#     * Redistributions of enclosed data must cite this package according to
+#       the citation("venn") command specific to this R package, along with the
+#       appropriate weblink to the CRAN package "venn".
+#     * Redistributions of enclosed data in other R packages must list package
+#       "venn" as a hard dependency in the Imports: field.
 #     * Redistributions of source code must retain the above copyright
 #       notice, this list of conditions and the following disclaimer.
 #     * Redistributions in binary form must reproduce the above copyright
 #       notice, this list of conditions and the following disclaimer in the
 #       documentation and/or other materials provided with the distribution.
-#     * The names of its contributors may NOT be used to endorse or promote products
-#       derived from this software without specific prior written permission.
+#     * The names of its contributors may NOT be used to endorse or promote
+#       products derived from this software without specific prior written
+#       permission.
 # 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL ADRIAN DUSA BE LIABLE FOR ANY
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL ADRIAN DUSA BE LIABLE FOR ANY
 # DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 # (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
@@ -23,12 +29,48 @@
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-`venn` <-
-function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
-    zcolor = "bw", opacity = 0.3, plotsize = 15, ilcs = 0.6, sncs = 0.85,
-    borders = TRUE, box = TRUE, par = TRUE, ggplot = FALSE, ...) {
+`venn` <- function(
+    x, snames = "", ilabels = NULL, ellipse = FALSE, zcolor = "bw",
+    opacity = 0.3, plotsize = 15, ilcs = 0.6, sncs = 0.85, borders = TRUE,
+    box = TRUE, par = TRUE, ggplot = FALSE, ...
+) {
     if (missing(x)) {
         admisc::stopError("Argument <x> is missing.")
+    }
+    dots <- list(...)
+    counts <- dots$counts
+    cts <- NULL
+    tjqca <- is.element("trajectory", names(dots))
+    trajectory <- dots$trajectory
+    tjcases <- names(trajectory)
+    dots$trajectory <- NULL
+    if (!is.null(ilabels)) {
+        if (identical(ilabels, "counts")) {
+            counts <- TRUE
+            ilabels <- NULL
+        }
+        else {
+            if (isTRUE(ilabels)) {
+                counts <- NULL
+            }
+            else {
+                if (is.atomic(ilabels) && !is.logical(ilabels)) {
+                    cts <- ilabels
+                    counts <- NULL
+                    ilabels <- NULL
+                }
+            }
+        }
+    }
+    if (is.null(counts)) {
+        counts <- FALSE
+    }
+    else {
+        if (is.atomic(counts) && !is.logical(counts)) {
+            cts <- counts
+            counts <- TRUE
+        }
+        counts <- isTRUE(counts)
     }
     if (ggplot) {
         ilcs <- ilcs * 2.5 / 0.6
@@ -79,24 +121,6 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
     }
     ttqca <- FALSE
     listx <- FALSE
-    cts <- NULL
-    if (is.null(counts)) {
-        counts <- FALSE
-    }
-    else if (is.numeric(counts)) {
-        if (is.numeric(x)) {
-            if (length(counts) == 2^x) {
-                cts <- counts
-                counts <- TRUE
-            }
-            else {
-                counts <- FALSE
-            }
-        }
-        else {
-            counts <- FALSE
-        }
-    }
     if (any(is.element(c("qca", "QCA_min", "tt", "QCA_tt"), class(x)))) {
         ttqca <- TRUE
         otype <- "input"
@@ -118,6 +142,8 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
                 )
             )
             noflevels <- x$noflevels
+            rnms <- rownames(x$initial.data)
+            ttcases <- x$tt$cases
         }
         else {
             QCA <- all(
@@ -138,6 +164,16 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
                 )
             )
             noflevels <- x$tt$noflevels
+            rnms <- rownames(x$tt$initial.data)
+            ttcases <- x$tt$tt$cases
+        }
+        if (tjqca) {
+            if (!identical(
+                sort(tjcases),
+                sort(unique(gsub("[0-9]", "", rnms)))
+            )) {
+                admisc::stopError("Case names do not match the truth table.")
+            }
         }
         if (!QCA) {
             admisc::stopError(
@@ -154,6 +190,11 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
         }
         if (nofsets == 0) {
             nofsets <- length(snames)
+        }
+        if (nofsets > 7) {
+            admisc::stopError(
+                "Venn diagrams can only be drawn up to 7 explanatory conditions."
+            )
         }
         if (nofsets < 4 | nofsets > 5) {
             ellipse <- FALSE
@@ -173,7 +214,13 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
             }
         }
         individual <- length(opacity) == nrow(tt)
-        gvenn <- openPlot(plotsize, par = par, ggplot = ggplot, ... = ...)
+        gvenn <- do.call(
+            openPlot,
+            c(
+                list(plotsize, par = par, ggplot = ggplot),
+                dots
+            )
+        )
         if (individual) {
             for (i in seq(nrow(tt))) {
                 if (tt$OUT[i] != "?") {
@@ -281,7 +328,9 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
                 }
             }
         }
-        cts <- tt$n
+        if (isTRUE(counts) & is.null(cts)) {
+            cts <- tt$n
+        }
         x <- nofsets
     }
     else if (is.numeric(x)) {
@@ -346,6 +395,7 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
         if (nofsets == 0) {
             nofsets <- length(x)
         }
+        if (isTRUE(counts) & is.null(cts)) {
             cts <- apply(
                 sapply(
                     rev(seq(nofsets)),
@@ -363,7 +413,7 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
                     }))
                 }
             )
-        counts <- TRUE
+        }
         x <- nofsets
     }
     else if (is.list(x)) {
@@ -420,19 +470,25 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
                 1,
                 function(x) paste(snames[x == 1], collapse = ":")
             )
-            cts <- unlist(lapply(intersections, length))
-            intersections <- intersections[cts > 0]
-            tt <- as.data.frame(cbind(tt, counts = cts))
+            ttcts <- unlist(lapply(intersections, length))
+            intersections <- intersections[ttcts > 0]
+            tt <- as.data.frame(cbind(tt, counts = ttcts))
             attr(tt, "intersections") <- intersections
-            counts <- TRUE
+            if (isTRUE(counts) & is.null(cts)) {
+                cts <- ttcts
+            }
             x <- nofsets
         }
     }
     else {
         admisc::stopError("Unrecognised argument <x>.")
     }
+    if (length(cts) != 2^nofsets) {
+        cts <- NULL
+        counts <- NULL
+    }
     if (nofsets > 7) {
-        admisc::stopError("Venn diagrams can be drawn up to 7 sets.")
+        admisc::stopError("Venn diagrams can only be drawn up to 7 sets.")
     }
     else if (nofsets < 4 | nofsets > 5) {
         ellipse <- FALSE
@@ -459,29 +515,108 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
         x, zcolor, ellipse, opacity, allborders = borders, box = box,
         gvenn = gvenn, ... = ...
     )
-    if (ilabels | counts & !is.null(cts)) {
-        ilabels <- icoords$l[
-            icoords$s == nofsets & icoords$v == as.numeric(ellipse)
-        ]
-        if (counts) {
-            cts[cts == 0] <- ""
+    if (isTRUE(ilabels) | !is.null(cts) | tjqca) {
+        if (isTRUE(ilabels)) {
+            ilabels <- icoords$l[
+                icoords$s == nofsets & icoords$v == as.numeric(ellipse)
+            ]
+        } else if (!is.null(cts)) {
+            if (isTRUE(counts)) {
+                cts[cts == 0] <- ""
+            }
             ilabels <- cts
         }
         icoords <- icoords[
             icoords$s == nofsets & icoords$v == as.numeric(ellipse),
             c("x", "y")
         ]
-        if (ggplot) {
-            for (i in which(ilabels != "")) {
-                gvenn <- gvenn + ggplot2::annotate("text",
-                    x = icoords$x[i], y = icoords$y[i],
-                    label = ilabels[i],
-                    size = ilcs
-                )
+        if (!is.null(ilabels)) {
+            if (ggplot) {
+                for (i in which(ilabels != "")) {
+                    gvenn <- gvenn + ggplot2::annotate("text",
+                        x = icoords$x[i], y = icoords$y[i],
+                        label = ilabels[i],
+                        size = ilcs
+                    )
+                }
+            }
+            else {
+                text(icoords, labels = ilabels, cex = ilcs)
             }
         }
-        else {
-            text(icoords, labels = ilabels, cex = ilcs)
+        if (tjqca) {
+            ttcases <- strsplit(gsub(";", ",", ttcases), split = ",")
+            caselist <- lapply(tjcases, function(x) {
+                rnms <- rnms[is.element(gsub("[0-9]", "", rnms), x)]
+                rnmsindex <- c()
+                for (i in seq(length(rnms))) {
+                    rnmsindex <- c(
+                        rnmsindex,
+                        which(sapply(ttcases, function(x) {
+                            any(x == rnms[i])
+                        }))
+                    )
+                }
+                return(rle(rnmsindex))
+            })
+            for (case in seq(length(tjcases))) {
+                rlecase <- caselist[[case]]
+                lengths <- rlecase$lengths
+                values <- rlecase$values
+                uvalues <- unique(values)
+                jx <- jitter(icoords$x[uvalues], factor = 2)
+                jy <- jitter(icoords$y[uvalues], factor = 2)
+                x <- jx[match(values, uvalues)]
+                y <- jy[match(values, uvalues)]
+                tcase <- trajectory[[tjcases[case]]]
+                if (is.null(tcase$length)) {
+                    tcase$length <- 0.12
+                }
+                if (is.null(tcase$lwd)) {
+                    tcase$lwd <- 2
+                }
+                if (is.null(tcase$col)) {
+                    tcase$col <- "black"
+                }
+                if (length(values) == 1) {
+                    points(
+                        x,
+                        y,
+                        pch = ifelse(is.null(tcase$pch), 20, tcase$pch),
+                        cex = ifelse(is.null(tcase$cex), 2, tcase$cex),
+                        col = tcase$col
+                    )
+                }
+                else {
+                    i <- 1
+                    j <- 2
+                    while (i <= length(values) - 1) {
+                        if (i == 1 & lengths[1] > 1) {
+                            points(
+                                x[1],
+                                y[1],
+                                pch = ifelse(is.null(tcase$pch), 20, tcase$pch),
+                                cex = ifelse(is.null(tcase$cex), 1.5, tcase$cex),
+                                col = tcase$col
+                            )
+                        }
+                        back <- FALSE
+                        while (j <= length(values)) {
+                            if (j < length(values)) {
+                                back <- values[j + 1] == values[i]
+                            }
+                            callist <- c(
+                                list(x[i], y[i], x[j], y[j]),
+                                tcase
+                            )
+                            callist$code <- 2 
+                            do.call(graphics::arrows, callist)
+                            j <- j + 1 + back
+                        }
+                        i <- i + 1 + back
+                    }
+                }
+            }
         }
     }
     scoords <- scoords[
@@ -522,17 +657,17 @@ function(x, snames = "", counts = NULL, ilabels = FALSE, ellipse = FALSE,
                 xmin = 10, xmax = 32, ymin = -44, ymax = -22,
                 fill = ttcolors[1],
                 col = "black"
-            ) + 
+            ) +
             ggplot2::annotate("rect",
                 xmin = 120, xmax = 142, ymin = -44, ymax = -22,
                 fill = ttcolors[2],
                 col = "black"
-            ) + 
+            ) +
             ggplot2::annotate("rect",
                 xmin = 230, xmax = 252, ymin = -44, ymax = -22,
                 fill = ttcolors[3],
                 col = "black"
-            ) + 
+            ) +
             ggplot2::annotate("rect",
                 xmin = 340, xmax = 362, ymin = -44, ymax = -22,
                 fill = ttcolors[4],

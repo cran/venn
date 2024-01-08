@@ -1,7 +1,6 @@
 \name{About the venn package}
 
-\alias{venn_package}
-
+\alias{venn-package}
 
 \docType{package}
 
@@ -10,15 +9,16 @@ Draw Venn Diagrams
 }
 
 \description{
-Draws and displays Venn diagrams up to 7 sets, and any boolean union of set intersections.
+A close to zero dependency package to draw and display Venn diagrams, and any
+boolean union of set intersections.
 }
 
 \details{
     \tabular{ll}{
     Package: \tab venn\cr
     Type:    \tab Package\cr
-    Version: \tab 1.11\cr
-    Date:    \tab 2022-06-09\cr
+    Version: \tab 1.12\cr
+    Date:    \tab 2024-01-08\cr
     License: \tab GPL (>= 2)\cr
     }
 }
