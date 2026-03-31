@@ -1,6 +1,6 @@
-# Copyright (c) 2016 - 2024, Adrian Dusa
+# Copyright (c) 2016-2026, Adrian Dusa
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, in whole or in part, are permitted provided that the
 # following conditions are met:
@@ -14,14 +14,13 @@
 #     * Redistributions in binary form must reproduce the above copyright
 #       notice, this list of conditions and the following disclaimer in the
 #       documentation and/or other materials provided with the distribution.
-#     * The names of its contributors may NOT be used to endorse or promote
-#       products derived from this software without specific prior written
-#       permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL ADRIAN DUSA BE LIABLE FOR ANY
+#     * The names of its contributors may NOT be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL ADRIAN DUSA BE LIABLE FOR ANY
 # DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 # (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 # LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
@@ -30,12 +29,13 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 `openPlot` <- function(plotsize = 15, par = TRUE, ggplot = FALSE, ...) {
+
     if (ggplot) {
         cf <- ggplot2::coord_fixed()
         cf$default <- TRUE
-        return(ggplot2::ggplot() + ggplot2::geom_blank() + 
+        return(ggplot2::ggplot() + ggplot2::geom_blank() +
             cf +
-            ggplot2::coord_fixed(xlim = c(0, 1000), ylim = c(0, 1000)) + 
+            ggplot2::coord_fixed(xlim = c(0, 1000), ylim = c(0, 1000)) +
             ggplot2::theme(axis.line = ggplot2::element_blank(),
                 axis.text.x = ggplot2::element_blank(),
                 axis.text.y = ggplot2::element_blank(),
@@ -60,12 +60,15 @@
             if (dev.cur() == 1) {
                 dev.new(width = (plotsize + 1)/2.54, height = (plotsize + 1)/2.54)
             }
+
             par(new = FALSE, xpd = TRUE, mai = c(0.05, 0.05, 0.05, 0.05))
         }
+
         dots <- list(...)
         plot(x = 0:1000, type = "n", axes = FALSE, asp = 1, xlab = "", ylab = "")
+
         if (!is.null(dots$main)) {
-            title(main = dots$main, line = dots$line)
+            title(main = dots$main, line = ifelse(is.null(dots$line), -1, dots$line))
         }
     }
 }
